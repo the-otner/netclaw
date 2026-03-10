@@ -38,7 +38,7 @@ clone_or_pull() {
 
 NETCLAW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MCP_DIR="$NETCLAW_DIR/mcp-servers"
-TOTAL_STEPS=48
+TOTAL_STEPS=49
 
 echo "========================================="
 echo "  NetClaw - CCIE Network Agent"
@@ -1558,10 +1558,60 @@ fi
 echo ""
 
 # ═══════════════════════════════════════════
-# Step 46: Deploy skills and set environment
+# Step 46: Aruba Central MCP Server (bundled)
 # ═══════════════════════════════════════════
 
-log_step "46/$TOTAL_STEPS Deploying skills and configuration..."
+log_step "46/$TOTAL_STEPS Installing Aruba Central MCP Server..."
+echo "  Source: bundled (mcp-servers/aruba-central-mcp/server.py)"
+echo "  HPE Aruba Networking Central — device inventory, health, routing, troubleshooting, security audit (16 tools)"
+
+ARUBA_CENTRAL_MCP_DIR="$NETCLAW_DIR/mcp-servers/aruba-central-mcp"
+
+if [ -d "$ARUBA_CENTRAL_MCP_DIR" ]; then
+    PY_MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)' 2>/dev/null || echo "0")
+    if [ "$PY_MINOR" -ge 12 ]; then
+        log_info "Python 3.$PY_MINOR detected (3.12+ required for Aruba Central MCP)"
+        if [ -f "$ARUBA_CENTRAL_MCP_DIR/requirements.txt" ]; then
+            pip3 install -r "$ARUBA_CENTRAL_MCP_DIR/requirements.txt" 2>/dev/null || \
+                pip3 install --break-system-packages -r "$ARUBA_CENTRAL_MCP_DIR/requirements.txt" 2>/dev/null || \
+                log_warn "Aruba Central MCP dependencies install failed"
+        fi
+        log_info "Aruba Central MCP installed (stdio transport via FastMCP)"
+        log_info "  16 tools: aruba_get_devices, aruba_get_device_health, aruba_get_interfaces,"
+        log_info "            aruba_get_clients, aruba_get_events, aruba_get_bgp_neighbors,"
+        log_info "            aruba_get_bgp_routes, aruba_get_ospf_neighbors, aruba_get_ospf_lsdb,"
+        log_info "            aruba_run_ping, aruba_run_traceroute, aruba_get_routing_table,"
+        log_info "            aruba_get_acls, aruba_get_aaa_config, aruba_get_firewall_policies,"
+        log_info "            aruba_get_firmware_compliance"
+    else
+        log_warn "Python 3.12+ required for Aruba Central MCP (found 3.$PY_MINOR)"
+        log_info "Install Python 3.12+ to enable Aruba Central MCP"
+    fi
+    _set_env_var() {
+        local key="$1" val="$2"
+        if grep -q "^${key}=" "${OPENCLAW_DIR:-$HOME/.openclaw}/.env" 2>/dev/null; then
+            sed -i.bak "s|^${key}=.*|${key}=${val}|" "${OPENCLAW_DIR:-$HOME/.openclaw}/.env" && \
+                rm -f "${OPENCLAW_DIR:-$HOME/.openclaw}/.env.bak"
+        else
+            echo "${key}=${val}" >> "${OPENCLAW_DIR:-$HOME/.openclaw}/.env"
+        fi
+    }
+    # Defer env var set to step 47 (Deploy skills) where _set_env_var is defined
+    ARUBA_CENTRAL_MCP_SCRIPT="$ARUBA_CENTRAL_MCP_DIR/server.py"
+    [ -f "$ARUBA_CENTRAL_MCP_SCRIPT" ] && \
+        log_info "Aruba Central MCP ready: $ARUBA_CENTRAL_MCP_SCRIPT" || \
+        log_error "server.py not found in $ARUBA_CENTRAL_MCP_DIR"
+else
+    log_warn "Aruba Central MCP directory not found: $ARUBA_CENTRAL_MCP_DIR"
+fi
+
+echo ""
+
+# ═══════════════════════════════════════════
+# Step 47: Deploy skills and set environment
+# ═══════════════════════════════════════════
+
+log_step "47/$TOTAL_STEPS Deploying skills and configuration..."
 
 PYATS_SCRIPT="$PYATS_MCP_DIR/pyats_mcp_server.py"
 TESTBED_PATH="$NETCLAW_DIR/testbed/testbed.yaml"
@@ -1646,6 +1696,7 @@ if command -v gtrace &> /dev/null; then
 fi
 
 _set_env_var "TTS_MCP_SCRIPT"            "$TTS_MCP_DIR/server.py"
+_set_env_var "ARUBA_CENTRAL_MCP_SCRIPT" "$NETCLAW_DIR/mcp-servers/aruba-central-mcp/server.py"
 
 # Remind user about API key if not set
 if ! grep -q "^ANTHROPIC_API_KEY=" "$OPENCLAW_ENV" 2>/dev/null && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
@@ -1677,10 +1728,10 @@ fi
 echo ""
 
 # ═══════════════════════════════════════════
-# Step 47: Verify installation
+# Step 48: Verify installation
 # ═══════════════════════════════════════════
 
-log_step "47/$TOTAL_STEPS Verifying installation..."
+log_step "48/$TOTAL_STEPS Verifying installation..."
 
 SERVERS_OK=0
 SERVERS_FAIL=0
@@ -1983,6 +2034,15 @@ else
     SERVERS_FAIL=$((SERVERS_FAIL + 1))
 fi
 
+# Aruba Central MCP is bundled with NetClaw
+if [ -f "$NETCLAW_DIR/mcp-servers/aruba-central-mcp/server.py" ]; then
+    log_info "Aruba Central MCP: OK (16 tools, stdio — device inventory, health, routing, security)"
+    SERVERS_OK=$((SERVERS_OK + 1))
+else
+    log_warn "Aruba Central MCP: NOT FOUND (mcp-servers/aruba-central-mcp/server.py)"
+    SERVERS_FAIL=$((SERVERS_FAIL + 1))
+fi
+
 verify_file "MCP Call Script" "$NETCLAW_DIR/scripts/mcp-call.py"
 
 echo ""
@@ -1990,10 +2050,10 @@ log_info "Verification: $SERVERS_OK OK, $SERVERS_FAIL FAILED"
 echo ""
 
 # ═══════════════════════════════════════════
-# Step 48: Summary
+# Step 49: Summary
 # ═══════════════════════════════════════════
 
-log_step "48/$TOTAL_STEPS Installation Summary"
+log_step "49/$TOTAL_STEPS Installation Summary"
 echo ""
 echo "========================================="
 echo "  NetClaw Installation Complete"
@@ -2002,7 +2062,7 @@ echo ""
 
 SKILL_COUNT=$(ls -d "$NETCLAW_DIR/workspace/skills/"*/ 2>/dev/null | wc -l)
 
-echo "MCP Servers Installed (39):"
+echo "MCP Servers Installed (40):"
 echo "  ┌─────────────────────────────────────────────────────────────"
 echo "  │ NETWORK DEVICE AUTOMATION:"
 echo "  │   pyATS              Cisco device CLI, Genie parsers"
@@ -2010,6 +2070,7 @@ echo "  │   F5 BIG-IP          iControl REST API (virtuals, pools, iRules)"
 echo "  │   Catalyst Center    DNA Center / CatC API (devices, clients, sites)"
 echo "  │   Juniper JunOS      PyEZ/NETCONF — CLI, config, templates, facts, batch ops (10 tools)"
 echo "  │   Arista CVP         CloudVision Portal — inventory, events, connectivity monitor, tags (4 tools)"
+echo "  │   Aruba Central      HPE Aruba Central — device inventory, health, routing, troubleshoot, security (16 tools)"
 echo "  │"
 echo "  │ PROTOCOL PARTICIPATION:"
 echo "  │   Protocol MCP        Live BGP/OSPF peering + GRE tunnels (10 tools)"
@@ -2153,6 +2214,12 @@ echo "  │   junos-network          PyEZ/NETCONF — CLI, config mgmt, Jinja2 t
 echo "  │"
 echo "  │ Arista CloudVision Skills:"
 echo "  │   arista-cvp              CVP — device inventory, events, connectivity monitor, tags (4 tools)"
+echo "  │"
+echo "  │ HPE Aruba Networking Central Skills:"
+echo "  │   aruba-central-monitoring    Device inventory, CPU/memory health, interfaces, clients, events (5 tools)"
+echo "  │   aruba-central-troubleshoot  OSI-layer troubleshooting: ping, traceroute, routing table (3 tools)"
+echo "  │   aruba-central-routing       BGP peer/RIB analysis, OSPF neighbors, OSPF LSDB (4 tools)"
+echo "  │   aruba-central-security      ACL review, AAA/RADIUS/TACACS+, firewall, firmware CVE (4 tools)"
 echo "  │"
 echo "  │ Microsoft 365 Skills:"
 echo "  │   msgraph-files          OneDrive/SharePoint file operations"

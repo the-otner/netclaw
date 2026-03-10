@@ -230,6 +230,32 @@ else
 fi
 echo ""
 
+# --- HPE Aruba Networking Central ---
+if yesno "Do you have an HPE Aruba Networking Central instance? (Aruba device inventory and monitoring)"; then
+    echo ""
+    echo -e "  Aruba Central MCP provides 16 tools: device inventory, health monitoring, BGP/OSPF"
+    echo -e "  routing analysis, on-device ping/traceroute, ACL/AAA/firewall security audit."
+    echo ""
+    echo -e "  Get your credentials from: ${BOLD}HPE GreenLake → Account Home → API Gateway${NC}"
+    echo -e "  → System Apps & Tokens → Generate Token"
+    echo ""
+    echo -e "  API Gateway URLs by region:"
+    echo -e "    US-East: ${DIM}https://apigw-prod2.central.arubanetworks.com${NC}"
+    echo -e "    US-West: ${DIM}https://apigw-uswest4.central.arubanetworks.com${NC}"
+    echo -e "    EU:      ${DIM}https://apigw-eucentral3.central.arubanetworks.com${NC}"
+    echo -e "    APAC:    ${DIM}https://apigw-apnortheast.central.arubanetworks.com${NC}"
+    echo -e "    Canada:  ${DIM}https://apigw-cacentral.central.arubanetworks.com${NC}"
+    echo ""
+    prompt ARUBA_BASE_URL "Aruba Central API Gateway URL" "https://apigw-prod2.central.arubanetworks.com"
+    prompt_secret ARUBA_TOKEN_VAL "Aruba Central OAuth2 Access Token"
+    [ -n "$ARUBA_BASE_URL" ] && set_env "ARUBA_CENTRAL_BASE_URL" "$ARUBA_BASE_URL"
+    [ -n "$ARUBA_TOKEN_VAL" ] && set_env "ARUBA_CENTRAL_TOKEN" "$ARUBA_TOKEN_VAL"
+    ok "HPE Aruba Networking Central configured"
+else
+    skip "HPE Aruba Networking Central"
+fi
+echo ""
+
 # --- ServiceNow ---
 if yesno "Do you have a ServiceNow instance?"; then
     echo ""
@@ -624,6 +650,7 @@ grep -q "^INFRAHUB_ADDRESS=" "$OPENCLAW_ENV" 2>/dev/null && ok "OpsMill Infrahub
 grep -q "^ITENTIAL_MCP_PLATFORM_HOST=" "$OPENCLAW_ENV" 2>/dev/null && ok "Itential IAP" || skip "Itential IAP"
 grep -q "^JUNOS_DEVICES_FILE=" "$OPENCLAW_ENV" 2>/dev/null && ok "Juniper JunOS" || skip "Juniper JunOS"
 grep -q "^CVP=" "$OPENCLAW_ENV" 2>/dev/null && ok "Arista CloudVision" || skip "Arista CloudVision"
+grep -q "^ARUBA_CENTRAL_BASE_URL=" "$OPENCLAW_ENV" 2>/dev/null && ok "HPE Aruba Networking Central" || skip "HPE Aruba Networking Central"
 grep -q "^SERVICENOW_INSTANCE_URL=" "$OPENCLAW_ENV" 2>/dev/null && ok "ServiceNow" || skip "ServiceNow"
 grep -q "^APIC_URL=" "$OPENCLAW_ENV" 2>/dev/null && ok "Cisco ACI" || skip "Cisco ACI"
 grep -q "^ISE_BASE=" "$OPENCLAW_ENV" 2>/dev/null && ok "Cisco ISE" || skip "Cisco ISE"
