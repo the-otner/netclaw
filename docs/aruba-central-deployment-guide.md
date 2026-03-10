@@ -66,6 +66,8 @@ For the LLM server (heavier models = better tool-calling accuracy):
 
 Install Python 3.12 and uv:
 
+#### Linux / macOS (bash)
+
 ```bash
 # Ubuntu/Debian
 sudo apt update && sudo apt install -y python3.12 python3.12-pip git curl
@@ -73,6 +75,22 @@ sudo apt update && sudo apt install -y python3.12 python3.12-pip git curl
 # Install uv (fast Python package manager)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Python 3.12 — download from https://www.python.org/downloads/ or use winget:
+winget install Python.Python.3.12
+
+# uv (fast Python package manager)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+# Then restart your terminal so %USERPROFILE%\.local\bin is on PATH
+
+# git — download from https://git-scm.com or use winget:
+winget install Git.Git
+
+# curl is built into Windows 10/11 — no installation needed
 ```
 
 ### Network Requirements
@@ -88,9 +106,18 @@ export PATH="$HOME/.local/bin:$PATH"
 
 Verify connectivity before proceeding:
 
+#### Linux / macOS (bash)
+
 ```bash
 curl -v https://apigw-prod2.central.arubanetworks.com/monitoring/v2/switches \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" | head -20
+```
+
+#### Windows (PowerShell)
+
+```powershell
+Invoke-RestMethod -Uri "https://apigw-prod2.central.arubanetworks.com/monitoring/v2/switches" `
+  -Headers @{"Authorization"="Bearer YOUR_TOKEN_HERE"}
 ```
 
 ---
@@ -107,6 +134,8 @@ Ollama is the easiest way to run local LLMs and has excellent tool-calling suppo
 
 #### Install Ollama
 
+##### Linux / macOS (bash)
+
 ```bash
 # Linux
 curl -fsSL https://ollama.com/install.sh | sh
@@ -116,6 +145,16 @@ brew install ollama
 
 # Or download from https://ollama.com/download
 ```
+
+##### Windows (PowerShell)
+
+```powershell
+# Download the Windows installer from https://ollama.com/download/windows
+# Or install via winget:
+winget install Ollama.Ollama
+```
+
+> **Windows note:** After installing, Ollama runs automatically as a Windows service — you do not need to run `ollama serve` manually. If the service fails to start, use the system tray icon or `Restart-Service -Name "Ollama"` in PowerShell (see the **Start the Ollama Server** section below).
 
 #### Pull a Tool-Capable Model
 
@@ -137,6 +176,8 @@ ollama pull mixtral:8x7b
 
 #### Start the Ollama Server
 
+##### Linux / macOS (bash)
+
 ```bash
 # Start with default settings (localhost:11434)
 ollama serve
@@ -146,11 +187,32 @@ sudo systemctl enable ollama
 sudo systemctl start ollama
 ```
 
+##### Windows
+
+On Windows, Ollama runs as a service automatically after installation. No manual start command is needed. If you need to restart it, use the system tray icon or:
+
+```powershell
+# Restart the Ollama service
+Restart-Service -Name "Ollama"
+```
+
 #### Verify Ollama is Running
+
+##### Linux / macOS (bash)
 
 ```bash
 curl http://localhost:11434/api/tags
 # Expected: {"models":[{"name":"llama3.1:70b-instruct-q4_K_M",...}]}
+
+# Test inference:
+ollama run llama3.1:70b-instruct-q4_K_M "What is BGP?"
+```
+
+##### Windows (PowerShell)
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:11434/api/tags"
+# Expected: models list including llama3.1:70b-instruct-q4_K_M
 
 # Test inference:
 ollama run llama3.1:70b-instruct-q4_K_M "What is BGP?"
@@ -162,7 +224,9 @@ ollama run llama3.1:70b-instruct-q4_K_M "What is BGP?"
 
 LM Studio provides a GUI for model management and an OpenAI-compatible local API.
 
-1. **Download LM Studio** from [lmstudio.ai](https://lmstudio.ai) for your OS (Windows/macOS/Linux)
+1. **Download LM Studio** from [lmstudio.ai](https://lmstudio.ai) for your OS.
+   - **Windows:** Download and run the Windows installer (`.exe`) from lmstudio.ai — no additional setup required.
+   - **macOS / Linux:** Download the appropriate package for your platform.
 
 2. **Load a model** — in LM Studio, go to the **Discover** tab and download:
    - `Meta Llama 3.1 70B Instruct` (Q4_K_M — requires ~40 GB RAM)
@@ -174,9 +238,18 @@ LM Studio provides a GUI for model management and an OpenAI-compatible local API
    - Port is configurable in LM Studio settings
 
 4. **Verify:**
+
+   ##### Linux / macOS (bash)
+
    ```bash
    curl http://localhost:1234/v1/models
    # Expected: {"object":"list","data":[{"id":"meta-llama-3.1-70b-instruct",...}]}
+   ```
+
+   ##### Windows (PowerShell)
+
+   ```powershell
+   Invoke-RestMethod -Uri "http://localhost:1234/v1/models"
    ```
 
 ---
@@ -186,6 +259,8 @@ LM Studio provides a GUI for model management and an OpenAI-compatible local API
 For maximum control and performance, build llama.cpp from source.
 
 #### Build llama.cpp
+
+##### Linux / macOS (bash)
 
 ```bash
 # Install build dependencies
@@ -204,7 +279,33 @@ cmake -B build
 cmake --build build --config Release -j$(nproc)
 ```
 
+##### Windows (PowerShell)
+
+**Option 1 — Pre-built binaries (recommended):**
+
+Download the latest pre-built Windows release from the [llama.cpp releases page](https://github.com/ggerganov/llama.cpp/releases). Extract the ZIP and use `llama-server.exe` directly — no build tools required.
+
+**Option 2 — Build from source with Visual Studio and CMake:**
+
+```powershell
+# Prerequisites: Visual Studio 2022 (with C++ Desktop Development workload) + CMake
+# Install CMake: winget install Kitware.CMake
+
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp
+
+# CPU-only build:
+cmake -B build
+cmake --build build --config Release
+
+# With CUDA GPU acceleration (requires CUDA Toolkit installed):
+cmake -B build -DLLAMA_CUDA=ON
+cmake --build build --config Release
+```
+
 #### Download a GGUF Model
+
+##### Linux / macOS (bash)
 
 ```bash
 # Install huggingface-hub CLI
@@ -223,7 +324,22 @@ huggingface-cli download \
   --local-dir ./models/
 ```
 
+##### Windows (PowerShell)
+
+```powershell
+# Install huggingface-hub CLI
+pip install huggingface-hub
+
+# Download Llama 3.1 70B Q4_K_M
+huggingface-cli download `
+  bartowski/Meta-Llama-3.1-70B-Instruct-GGUF `
+  Meta-Llama-3.1-70B-Instruct-Q4_K_M.gguf `
+  --local-dir .\models\
+```
+
 #### Start the llama.cpp Server
+
+##### Linux / macOS (bash)
 
 ```bash
 # CPU-only (OpenAI-compatible API on port 8080)
@@ -244,6 +360,29 @@ huggingface-cli download \
 
 # Verify:
 curl http://localhost:8080/v1/models
+```
+
+##### Windows (PowerShell)
+
+```powershell
+# CPU-only (OpenAI-compatible API on port 8080)
+.\build\bin\Release\llama-server.exe `
+  --model models\Meta-Llama-3.1-70B-Instruct-Q4_K_M.gguf `
+  --host 0.0.0.0 `
+  --port 8080 `
+  --ctx-size 8192 `
+  --n-gpu-layers 0
+
+# With GPU acceleration:
+.\build\bin\Release\llama-server.exe `
+  --model models\Meta-Llama-3.1-70B-Instruct-Q4_K_M.gguf `
+  --host 0.0.0.0 `
+  --port 8080 `
+  --ctx-size 8192 `
+  --n-gpu-layers 99
+
+# Verify:
+Invoke-RestMethod -Uri "http://localhost:8080/v1/models"
 ```
 
 ---
@@ -298,17 +437,39 @@ Your region is shown in the API Gateway URL when you log in to HPE GreenLake. If
 
 ### Clone the Repository
 
+#### Linux / macOS (bash)
+
 ```bash
+git clone https://github.com/automateyournetwork/netclaw.git
+cd netclaw
+```
+
+#### Windows (PowerShell)
+
+```powershell
 git clone https://github.com/automateyournetwork/netclaw.git
 cd netclaw
 ```
 
 ### Configure Aruba Central Credentials
 
+#### Linux / macOS (bash)
+
 ```bash
 # Create the .env file for the Aruba Central MCP server
 cp mcp-servers/aruba-central-mcp/.env.example mcp-servers/aruba-central-mcp/.env
 nano mcp-servers/aruba-central-mcp/.env
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Create the .env file for the Aruba Central MCP server
+Copy-Item mcp-servers\aruba-central-mcp\.env.example mcp-servers\aruba-central-mcp\.env
+
+# Edit with Notepad (or VS Code):
+notepad mcp-servers\aruba-central-mcp\.env
+# Or: code mcp-servers\aruba-central-mcp\.env
 ```
 
 Edit the `.env` file with your credentials:
@@ -321,6 +482,8 @@ ARUBA_CENTRAL_TOKEN=your_access_token_here
 
 ### Install Dependencies
 
+#### Linux / macOS (bash)
+
 ```bash
 # Using uv (recommended)
 cd mcp-servers/aruba-central-mcp
@@ -328,6 +491,17 @@ uv pip install -r requirements.txt
 
 # Or using pip directly
 pip3 install -r mcp-servers/aruba-central-mcp/requirements.txt
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Using uv (recommended)
+cd mcp-servers\aruba-central-mcp
+uv pip install -r requirements.txt
+
+# Or using pip directly
+pip install -r mcp-servers\aruba-central-mcp\requirements.txt
 ```
 
 ---
@@ -348,7 +522,12 @@ Choose the MCP client that matches your LLM setup:
 
 If you have Claude Desktop installed and want to use Anthropic Claude instead of a local LLM:
 
-Edit `~/.config/claude/claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+Edit the config file:
+- **Linux:** `~/.config/claude/claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+##### Linux / macOS (bash)
 
 ```json
 {
@@ -370,6 +549,38 @@ Edit `~/.config/claude/claude_desktop_config.json` (macOS: `~/Library/Applicatio
 }
 ```
 
+##### Windows (PowerShell)
+
+Open the config file with:
+
+```powershell
+notepad "$env:APPDATA\Claude\claude_desktop_config.json"
+```
+
+Use Windows paths and `uv.exe`:
+
+```json
+{
+  "mcpServers": {
+    "aruba-central": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with", "fastmcp",
+        "fastmcp", "run",
+        "C:\\path\\to\\netclaw\\mcp-servers\\aruba-central-mcp\\server.py"
+      ],
+      "env": {
+        "ARUBA_CENTRAL_BASE_URL": "https://apigw-prod2.central.arubanetworks.com",
+        "ARUBA_CENTRAL_TOKEN": "your_access_token_here"
+      }
+    }
+  }
+}
+```
+
+> **Windows tip:** Use double backslashes (`\\`) in JSON paths, or forward slashes (`/`) which also work on Windows.
+
 Restart Claude Desktop. You should see "aruba-central" in the MCP tools panel.
 
 ---
@@ -377,6 +588,8 @@ Restart Claude Desktop. You should see "aruba-central" in the MCP tools panel.
 ### Option B: mcp-client-cli (Command-Line MCP Client)
 
 `mcp-client-cli` is an open-source CLI that connects any OpenAI-compatible LLM to MCP servers.
+
+#### Linux / macOS (bash)
 
 ```bash
 # Install
@@ -413,6 +626,43 @@ EOF
 # Change "base_url" to "http://localhost:1234/v1"
 # For llama.cpp (port 8080):
 # Change "base_url" to "http://localhost:8080/v1"
+
+# Start a chat session
+mcp-chat
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Install
+pip install mcp-client-cli
+
+# Create config directory and file
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.config\mcp-client-cli"
+@'
+{
+  "llm": {
+    "provider": "openai",
+    "model": "llama3.1:70b-instruct-q4_K_M",
+    "base_url": "http://localhost:11434/v1",
+    "api_key": "ollama"
+  },
+  "mcp_servers": {
+    "aruba-central": {
+      "command": "uv",
+      "args": [
+        "run", "--with", "fastmcp",
+        "fastmcp", "run",
+        "C:\\path\\to\\netclaw\\mcp-servers\\aruba-central-mcp\\server.py"
+      ],
+      "env": {
+        "ARUBA_CENTRAL_BASE_URL": "https://apigw-prod2.central.arubanetworks.com",
+        "ARUBA_CENTRAL_TOKEN": "your_access_token_here"
+      }
+    }
+  }
+}
+'@ | Set-Content "$env:USERPROFILE\.config\mcp-client-cli\config.json"
 
 # Start a chat session
 mcp-chat
@@ -587,8 +837,26 @@ interpreter
 
 You can run the MCP server directly for testing (the MCP client will start it automatically in production):
 
+#### Linux / macOS (bash)
+
 ```bash
 cd netclaw/mcp-servers/aruba-central-mcp
+
+# Run with uv (resolves dependencies automatically)
+uv run --with fastmcp fastmcp run server.py
+
+# Or with pip-installed dependencies
+python server.py
+```
+
+#### Windows (PowerShell)
+
+```powershell
+cd netclaw\mcp-servers\aruba-central-mcp
+
+# Set environment variables for this session
+$env:ARUBA_CENTRAL_BASE_URL = "https://apigw-prod2.central.arubanetworks.com"
+$env:ARUBA_CENTRAL_TOKEN = "your_token"
 
 # Run with uv (resolves dependencies automatically)
 uv run --with fastmcp fastmcp run server.py
@@ -693,6 +961,8 @@ Which of my devices are running non-compliant firmware versions?
 
 ### Protect Credentials
 
+#### Linux / macOS (bash)
+
 ```bash
 # Never commit .env files
 echo "mcp-servers/aruba-central-mcp/.env" >> .gitignore
@@ -706,9 +976,27 @@ security add-generic-password -a aruba-central -s netclaw -w "your_token"
 # Retrieve: security find-generic-password -a aruba-central -s netclaw -w
 ```
 
+#### Windows (PowerShell)
+
+```powershell
+# Never commit .env files
+Add-Content .gitignore "mcp-servers\aruba-central-mcp\.env"
+Add-Content .gitignore ".env"
+
+# Restrict file permissions (only your user account)
+$acl = Get-Acl "mcp-servers\aruba-central-mcp\.env"
+$acl.SetAccessRuleProtection($true, $false)
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+    $env:USERNAME, "FullControl", "Allow")
+$acl.SetAccessRule($rule)
+Set-Acl "mcp-servers\aruba-central-mcp\.env" $acl
+```
+
 ### Restrict LLM Server Access
 
 If the LLM server runs on a shared host, restrict who can reach it:
+
+#### Linux / macOS (bash)
 
 ```bash
 # Option A: Bind to localhost only (already default for Ollama)
@@ -719,6 +1007,23 @@ sudo iptables -A INPUT -p tcp --dport 11434 -s 10.0.0.0/8 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 11434 -j DROP
 
 # Option C: Use SSH tunneling to access a remote LLM server securely
+ssh -L 11434:localhost:11434 user@llm-server.example.com
+# Then connect your MCP client to http://localhost:11434
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Block external access to LLM server, allow only localhost
+New-NetFirewallRule -DisplayName "Block LLM External" `
+  -Direction Inbound -LocalPort 11434 -Protocol TCP `
+  -Action Block -Profile Domain,Private,Public
+
+New-NetFirewallRule -DisplayName "Allow LLM Localhost" `
+  -Direction Inbound -LocalPort 11434 -Protocol TCP `
+  -Action Allow -RemoteAddress 127.0.0.1
+
+# SSH tunneling to a remote LLM server (OpenSSH is built into Windows 10/11):
 ssh -L 11434:localhost:11434 user@llm-server.example.com
 # Then connect your MCP client to http://localhost:11434
 ```
@@ -794,6 +1099,8 @@ grep "aruba_" memory/*.md
 
 The MCP server cannot find the environment variable.
 
+#### Linux / macOS (bash)
+
 ```bash
 # Check your .env file
 cat mcp-servers/aruba-central-mcp/.env
@@ -804,9 +1111,23 @@ export ARUBA_CENTRAL_TOKEN=your_token
 python mcp-servers/aruba-central-mcp/server.py
 ```
 
+#### Windows (PowerShell)
+
+```powershell
+# Check your .env file
+Get-Content mcp-servers\aruba-central-mcp\.env
+
+# Or set environment variables directly for testing
+$env:ARUBA_CENTRAL_BASE_URL = "https://apigw-prod2.central.arubanetworks.com"
+$env:ARUBA_CENTRAL_TOKEN = "your_token"
+python mcp-servers\aruba-central-mcp\server.py
+```
+
 ### Error: `Authentication failed (401)`
 
 Your Aruba Central token has expired or is invalid.
+
+#### Linux / macOS (bash)
 
 ```bash
 # Verify your token is valid
@@ -814,6 +1135,17 @@ curl -s "https://apigw-prod2.central.arubanetworks.com/monitoring/v2/switches?li
   -H "Authorization: Bearer YOUR_TOKEN" | python3 -m json.tool
 
 # If you see {"code":401,"description":"Unauthorized"}, generate a new token
+# via HPE GreenLake API Gateway → System Apps & Tokens → Generate Token
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Verify your token is valid
+Invoke-RestMethod -Uri "https://apigw-prod2.central.arubanetworks.com/monitoring/v2/switches?limit=1" `
+  -Headers @{"Authorization"="Bearer YOUR_TOKEN"}
+
+# If you see a 401 error, generate a new token
 # via HPE GreenLake API Gateway → System Apps & Tokens → Generate Token
 ```
 
@@ -829,6 +1161,8 @@ The MCP server automatically retries on 429 (up to 3 attempts with backoff). If 
 
 ### Error: `Connection failed` / `SSL handshake`
 
+#### Linux / macOS (bash)
+
 ```bash
 # Test DNS resolution
 nslookup apigw-prod2.central.arubanetworks.com
@@ -838,6 +1172,19 @@ openssl s_client -connect apigw-prod2.central.arubanetworks.com:443 -brief
 
 # Check proxy settings (if behind a corporate proxy)
 export HTTPS_PROXY=http://proxy.example.com:8080
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Test DNS resolution
+Resolve-DnsName apigw-prod2.central.arubanetworks.com
+
+# Test connectivity on port 443
+Test-NetConnection -ComputerName apigw-prod2.central.arubanetworks.com -Port 443
+
+# Check proxy settings (if behind a corporate proxy)
+$env:HTTPS_PROXY = "http://proxy.example.com:8080"
 ```
 
 ### Error: `Resource not found (404)` for device serial
@@ -862,3 +1209,53 @@ If the LLM responds to queries without calling any MCP tools:
 - Reduce context window if using large RIB/LSDB responses: set `limit=20` in routing queries
 - Use pagination (`offset` parameter) for large device fleets
 - Consider running a faster (smaller) model for quick lookups and the larger model for analysis
+
+---
+
+### Windows-Specific Issues
+
+#### `python` vs `python3`
+
+On Windows, the Python executable is usually `python` (not `python3`). If you see `'python3' is not recognized`, use `python` instead:
+
+```powershell
+python --version          # Should show Python 3.12.x
+python server.py          # Use instead of python3
+pip install -r requirements.txt   # Use instead of pip3
+```
+
+#### PATH not updated after installing uv
+
+After running the uv installer, open a **new** terminal window so the updated `PATH` takes effect. If `uv` is still not found:
+
+```powershell
+# Add uv to the current session's PATH manually
+$env:PATH += ";$env:USERPROFILE\.local\bin"
+
+# Verify
+uv --version
+```
+
+To make the change permanent, add `%USERPROFILE%\.local\bin` to your system PATH via **System Properties → Environment Variables**.
+
+#### Windows Defender / Firewall blocking connections
+
+If Ollama or the MCP server cannot bind to a port or accept connections, Windows Defender Firewall may be blocking it. Allow it through:
+
+```powershell
+# Allow Ollama through the firewall (run as Administrator)
+New-NetFirewallRule -DisplayName "Allow Ollama" `
+  -Direction Inbound -LocalPort 11434 -Protocol TCP `
+  -Action Allow -Profile Domain,Private
+
+# If Windows Defender flags uv or Python, add an exclusion:
+Add-MpPreference -ExclusionPath "$env:USERPROFILE\.local\bin\uv.exe"
+```
+
+#### Using WSL2 as an alternative
+
+If you are running **Windows Subsystem for Linux (WSL2)**, the Linux instructions in this guide apply directly inside your WSL2 terminal. Keep in mind:
+
+- If your WSL2 distro runs as `root` (common in minimal/Docker-based distros), `sudo` may not be available — run commands like `apt install` directly without `sudo`.
+- Ollama can run either natively on Windows **or** inside WSL2 — pick one and point your MCP client at `http://localhost:11434`.
+- File paths inside WSL2 use Linux-style forward slashes; Windows paths are accessible under `/mnt/c/...`
