@@ -52,7 +52,7 @@ For the LLM server (heavier models = better tool-calling accuracy):
 | 70B parameters (recommended) | 48 GB | 16-core CPU | 2× A100 or 2× RTX 4090 |
 | 70B quantized (Q4, practical) | 40 GB RAM | 16-core CPU | 24 GB VRAM GPU (RTX 3090/4090) |
 
-> **Recommendation for network engineers:** Use a 70B quantized model (Q4\_K\_M) if you have a workstation with 40+ GB RAM. Models like Llama 3.1 70B and DeepSeek-Coder-V2 have strong tool-calling capabilities needed for reliable MCP integration.
+> **Recommendation for network engineers:** Use a 70B quantized model (Q4_K_M) if you have a workstation with 40+ GB RAM. Models like Llama 3.1 70B and DeepSeek-Coder-V2 have strong tool-calling capabilities needed for reliable MCP integration.
 
 ### Software Requirements
 

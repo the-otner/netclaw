@@ -1587,16 +1587,6 @@ if [ -d "$ARUBA_CENTRAL_MCP_DIR" ]; then
         log_warn "Python 3.12+ required for Aruba Central MCP (found 3.$PY_MINOR)"
         log_info "Install Python 3.12+ to enable Aruba Central MCP"
     fi
-    _set_env_var() {
-        local key="$1" val="$2"
-        if grep -q "^${key}=" "${OPENCLAW_DIR:-$HOME/.openclaw}/.env" 2>/dev/null; then
-            sed -i.bak "s|^${key}=.*|${key}=${val}|" "${OPENCLAW_DIR:-$HOME/.openclaw}/.env" && \
-                rm -f "${OPENCLAW_DIR:-$HOME/.openclaw}/.env.bak"
-        else
-            echo "${key}=${val}" >> "${OPENCLAW_DIR:-$HOME/.openclaw}/.env"
-        fi
-    }
-    # Defer env var set to step 47 (Deploy skills) where _set_env_var is defined
     ARUBA_CENTRAL_MCP_SCRIPT="$ARUBA_CENTRAL_MCP_DIR/server.py"
     [ -f "$ARUBA_CENTRAL_MCP_SCRIPT" ] && \
         log_info "Aruba Central MCP ready: $ARUBA_CENTRAL_MCP_SCRIPT" || \
